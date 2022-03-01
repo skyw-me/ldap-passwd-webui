@@ -3,7 +3,7 @@
 import bottle
 from bottle import get, post, static_file, request, route, template
 from bottle import SimpleTemplate
-from configparser import ConfigParser
+from configparser import SafeConfigParser
 from ldap3 import Connection, Server
 from ldap3 import SIMPLE, SUBTREE
 from ldap3.core.exceptions import LDAPBindError, LDAPConstraintViolationResult, \
@@ -83,7 +83,7 @@ def change_password(*args):
 
 
 def change_password_ldap(username, old_pass, new_pass):
-    with connect_ldap() as c:
+    with connect_ldap(authentication=SIMPLE, user=CONF['ldap']['bind_dn'], password=CONF['ldap']['bind_password']) as c:
         user_dn = find_user_dn(c, username)
 
     # Note: raises LDAPUserNameIsMandatoryError when user_dn is None.
@@ -109,7 +109,7 @@ def find_user_dn(conn, uid):
 
 
 def read_config():
-    config = ConfigParser()
+    config = SafeConfigParser(os.environ)  # environment interpolation
     config.read([path.join(BASE_DIR, 'settings.ini'), os.getenv('CONF_FILE', '')])
 
     return config
